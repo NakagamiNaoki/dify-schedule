@@ -2,7 +2,7 @@ name: Auto
 
 on:
   schedule:
-    - cron: "45 5 * * *" # 日本時間は＋9時間
+    - cron: "05 6 * * *" # 日本時間は＋9時間
   workflow_dispatch:
 
 env:
