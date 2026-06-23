@@ -5,17 +5,17 @@ import pkg from "../package.json" with { type: "json" };
 
 export class Notify {
   /**
-   * 邮件推送
+   * メール送信
    * @param options
    */
   async email(options) {
     const auth = {
-      user: env.EMAIL_USER, // generated ethereal user
-      pass: env.EMAIL_PASS, // generated ethereal password
+      user: env.EMAIL_USER,
+      pass: env.EMAIL_PASS,
     };
 
     if (!auth.user || !auth.pass || auth.user === "" || auth.pass === "") {
-      throw new Error("未配置邮箱。");
+      throw new Error("メールアドレスが設定されていません。");
     }
 
     const transporter = nodemailer.createTransport({
@@ -24,7 +24,6 @@ export class Notify {
       port: 465,
       auth,
       tls: {
-        // do not fail on invalid certs
         rejectUnauthorized: false,
       },
     });
@@ -68,7 +67,7 @@ export class Notify {
   </header>
   ${
     this.newVersion.has
-      ? `<a class="dify-update-tip" href="${this.newVersion.url}" target="_blank"><span>Dify工作流定时助手 ${this.newVersion.name} 现在可用 ›</span></a>`
+      ? `<a class="dify-update-tip" href="${this.newVersion.url}" target="_blank"><span>Difyワークフロースケジューラー ${this.newVersion.name} が利用可能です ›</span></a>`
       : ""
   }
   <main class="dify-main">
@@ -79,36 +78,35 @@ export class Notify {
     }
   </main>
   <footer class="dify-footer">
-    <span>Dify工作流定时助手v${pkg.version}</span> |
+    <span>Difyワークフロースケジューラー v${pkg.version}</span> |
     <span>Copyright © ${new Date().getFullYear()} <a href="https://github.com/leochen-g" target="_blank">Leo_chen</a></span>
   </footer>
 </section>
 `.trim();
 
     await transporter.sendMail({
-      from: `Dify工作流定时助手 <${auth.user}>`, // sender address（'"Fred Foo 👻" <foo@example.com>'）
-      to: env.EMAIL_TO, // list of receivers
-      subject: options.title, // Subject line
-      // text, // plain text body
-      html: template, // html body
+      from: `Difyワークフロースケジューラー <${auth.user}>`,
+      to: env.EMAIL_TO,
+      subject: options.title,
+      html: template,
       attachments: [
         {
           filename: "logo.svg",
-          path: 'https://cloud.dify.ai/logo/logo-site.png',
-          cid: "logo-site.png", //same cid value as in the html img src
+          path: "https://cloud.dify.ai/logo/logo-site.png",
+          cid: "logo-site.png",
         },
       ],
     });
   }
 
   /**
-   * PushPlus推送
+   * PushPlus通知
    * @param options
    */
   async pushplus(options) {
     const token = env.PUSHPLUS_TOKEN;
     if (!token || token === "") {
-      throw new Error("未配置PushPlus Token。");
+      throw new Error("PushPlus Tokenが設定されていません。");
     }
 
     const config = {
@@ -131,13 +129,13 @@ export class Notify {
   }
 
   /**
-   * serverPush推送
+   * Server酱通知
    * @param options
    */
   async serverPush(options) {
     const token = env.SERVERPUSHKEY;
     if (!token || token === "") {
-      throw new Error("未配置Server酱 key。");
+      throw new Error("Server酱のKeyが設定されていません。");
     }
 
     const config = {
@@ -154,13 +152,13 @@ export class Notify {
   }
 
   /**
-   * 钉钉Webhook
+   * DingTalk Webhook通知
    * @param options
    */
   async dingtalkWebhook(options) {
     const url = env.DINGDING_WEBHOOK;
     if (!url || url === "") {
-      throw new Error("未配置钉钉Webhook。");
+      throw new Error("DingTalk Webhookが設定されていません。");
     }
 
     return axios.post(url, {
@@ -172,13 +170,13 @@ export class Notify {
   }
 
   /**
-   * 飞书Webhook
+   * Feishu Webhook通知
    * @param options
    */
   async feishuWebhook(options) {
     const url = env.FEISHU_WEBHOOK;
     if (!url || url === "") {
-      throw new Error("未配置飞书Webhook。");
+      throw new Error("Feishu Webhookが設定されていません。");
     }
 
     return axios.post(url, {
@@ -203,13 +201,13 @@ export class Notify {
   }
 
   /**
-   * 企业微信Webhook
+   * WeCom（企業WeChat）Webhook通知
    * @param options
    */
   async wecomWebhook(options) {
     const url = env.WEIXIN_WEBHOOK;
     if (!url || url === "") {
-      throw new Error("未配置企业微信Webhook。");
+      throw new Error("WeCom Webhookが設定されていません。");
     }
 
     return axios.post(url, {
@@ -225,17 +223,17 @@ export class Notify {
   }
 
   /**
-   * 微秘书webhook
+   * 微秘書 Webhook通知
    * @param options
    */
   async wimishuWebhook(options) {
     const url = env.AIBOTK_HOOK;
     if (!url || url === "") {
-      throw new Error("未配置微秘书Hook地址");
+      throw new Error("微秘書のHookアドレスが設定されていません。");
     }
     let res = "";
     if (env.AIBOTK_ROOM_RECIVER) {
-      console.log(`微秘书推送给群组：${env.AIBOTK_CONTACT_RECIVER}`);
+      console.log(`微秘書 グループへ送信：${env.AIBOTK_CONTACT_RECIVER}`);
       res = await axios.post(url + "/openapi/v1/chat/room", {
         apiKey: env.AIBOTK_KEY,
         roomName: env.AIBOTK_ROOM_RECIVER,
@@ -244,10 +242,10 @@ export class Notify {
           content: `${options.content}`,
         },
       });
-      console.log(`微秘书推送给群组结果：${res.data}`);
+      console.log(`微秘書 グループ送信結果：${res.data}`);
     }
     if (env.AIBOTK_CONTACT_RECIVER) {
-      console.log(`微秘书推送给好友：${env.AIBOTK_CONTACT_RECIVER}`);
+      console.log(`微秘書 個人へ送信：${env.AIBOTK_CONTACT_RECIVER}`);
       res = await axios.post(url + "/openapi/v1/chat/contact", {
         apiKey: env.AIBOTK_KEY,
         name: env.AIBOTK_CONTACT_RECIVER,
@@ -256,7 +254,7 @@ export class Notify {
           content: `${options.content}`,
         },
       });
-      console.log(`微秘书推送给好友结果：${res.data}`);
+      console.log(`微秘書 個人送信結果：${res.data}`);
     }
     return res;
   }
@@ -280,24 +278,24 @@ export class Notify {
     const trycatch = async (name, fn) => {
       try {
         await fn(options);
-        console.log(`[${name}]: 消息推送成功!`);
+        console.log(`[${name}]: メッセージ送信成功！`);
       } catch (e) {
-        console.log(`[${name}]: 消息推送失败! 原因: ${e.message}`);
+        console.log(`[${name}]: メッセージ送信失敗！理由: ${e.message}`);
       }
     };
 
     await this.checkupdate();
     if (this.newVersion.has) {
-      console.log(`Dify工作流定时助手 ${this.newVersion.name} 现在可用`);
+      console.log(`Difyワークフロースケジューラー ${this.newVersion.name} が利用可能です`);
     }
 
-    await trycatch("邮件", this.email.bind(this));
-    await trycatch("钉钉", this.dingtalkWebhook.bind(this));
-    await trycatch("微信", this.wecomWebhook.bind(this));
-    await trycatch("微秘书", this.wimishuWebhook.bind(this));
-    await trycatch("PushPlus", this.pushplus.bind(this));
-    await trycatch("Server酱", this.serverPush.bind(this));
-    await trycatch("飞书", this.feishuWebhook.bind(this));
+    await trycatch("メール",     this.email.bind(this));
+    await trycatch("DingTalk",  this.dingtalkWebhook.bind(this));
+    await trycatch("WeCom",     this.wecomWebhook.bind(this));
+    await trycatch("微秘書",    this.wimishuWebhook.bind(this));
+    await trycatch("PushPlus",  this.pushplus.bind(this));
+    await trycatch("Server酱",  this.serverPush.bind(this));
+    await trycatch("Feishu",    this.feishuWebhook.bind(this));
   }
 }
 
