@@ -2,7 +2,7 @@ import axios from "axios";
 export const BASE_URL = "https://api.dify.ai/v1";
 
 export const routes = {
-  //  app's
+  // アプリ関連
   feedback: {
     method: "POST",
     url: (message_id) => `/messages/${message_id}/feedbacks`,
@@ -24,18 +24,18 @@ export const routes = {
     url: () => `/meta`,
   },
 
-  // completion's
+  // テキスト補完関連
   createCompletionMessage: {
     method: "POST",
     url: () => `/completion-messages`,
   },
 
-  // chat's
+  // チャット関連
   createChatMessage: {
     method: "POST",
     url: () => `/chat-messages`,
   },
-  getSuggested:{
+  getSuggested: {
     method: "GET",
     url: (message_id) => `/messages/${message_id}/suggested`,
   },
@@ -64,7 +64,7 @@ export const routes = {
     url: () => `/audio-to-text`,
   },
 
-  // workflow‘s
+  // ワークフロー関連
   getWorkflowInfo: {
     method: "GET",
     url: () => `/info`,
@@ -81,7 +81,6 @@ export const routes = {
     method: "GET",
     url: (task_id) => `/workflows/run/${task_id}`,
   },
-
 };
 
 export class DifyClient {
@@ -107,7 +106,7 @@ export class DifyClient {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
-      ...headerParams
+      ...headerParams,
     };
 
     const url = `${this.baseUrl}${endpoint}`;
@@ -165,7 +164,7 @@ export class DifyClient {
       null,
       false,
       {
-        "Content-Type": 'multipart/form-data'
+        "Content-Type": "multipart/form-data",
       }
     );
   }
@@ -174,7 +173,7 @@ export class DifyClient {
     const data = {
       text,
       user,
-      streaming
+      streaming,
     };
     return this.sendRequest(
       routes.textToAudio.method,
@@ -293,9 +292,7 @@ export class ChatClient extends DifyClient {
     const params = { user };
 
     if (conversation_id) params.conversation_id = conversation_id;
-
     if (first_id) params.first_id = first_id;
-
     if (limit) params.limit = limit;
 
     return this.sendRequest(
@@ -324,7 +321,6 @@ export class ChatClient extends DifyClient {
     );
   }
 
-
   audioToText(data) {
     return this.sendRequest(
       routes.audioToText.method,
@@ -333,27 +329,26 @@ export class ChatClient extends DifyClient {
       null,
       false,
       {
-        "Content-Type": 'multipart/form-data'
+        "Content-Type": "multipart/form-data",
       }
     );
   }
-
 }
 
 export class WorkflowClient extends DifyClient {
-  run(inputs,user,stream) {
+  run(inputs, user, stream) {
     const data = {
       inputs,
       response_mode: stream ? "streaming" : "blocking",
-      user
+      user,
     };
 
     return this.sendRequest(
-        routes.runWorkflow.method,
-        routes.runWorkflow.url(),
-        data,
-        null,
-        stream
+      routes.runWorkflow.method,
+      routes.runWorkflow.url(),
+      data,
+      null,
+      stream
     );
   }
 
@@ -365,6 +360,7 @@ export class WorkflowClient extends DifyClient {
       data
     );
   }
+
   info(user) {
     const params = { user };
     return this.sendRequest(
@@ -374,6 +370,7 @@ export class WorkflowClient extends DifyClient {
       params
     );
   }
+
   result(task_id) {
     return this.sendRequest(
       routes.getWorkflowResult.method,
@@ -381,84 +378,116 @@ export class WorkflowClient extends DifyClient {
       null
     );
   }
+
   async getWorkflowResult(input, user, isStream) {
-    const res = await this.run(input, user, isStream)
+    const res = await this.run(input, user, isStream);
+
     function unicodeToChar(text) {
-        if (!text)
-          return ''
-
-        return text.replace(/\\u[0-9a-f]{4}/g, (_match, p1) => {
-          return String.fromCharCode(parseInt(p1, 16))
-        })
-      }
-    const asyncSSE = (stream) => {
-        return new Promise((resolve, reject) => {
-          let task_id = ''
-          try {
-            stream.on('data', data => {
-              const streams = new TextDecoder('utf-8').decode(data, { stream: true }).split('\n')
-              streams.forEach(stream => {
-                if (stream && stream.startsWith('data: ')) {
-                  let res = {}
-                  try {
-                    res = JSON.parse(stream.substring(6)) || {}
-                  } catch (e) {
-                    return
-                  }
-
-                  if (!res.event || res.event === 'error' || res.status === 400) {
-                    console.log(`工作流输出错误code:${res.code}`, res.message)
-                    return
-                  }
-                  if (res.event === 'workflow_started' || res.event === 'tts_message') {
-                      task_id = res?.workflow_run_id
-                      console.log('工作流开始执行')
-                  }
-                  if (res.event === 'node_started' || res.event=== 'node_finished') {
-                    task_id = res?.workflow_run_id
-                    console.log('工作流node节点执行任务中')
-                  }
-                  if (res.event === 'workflow_finished' || res.event === 'tts_message_end') {
-                    console.log('工作流执行完毕，正在组装数据进行发送')
-                    task_id = res?.workflow_run_id
-                  }
-                }
-              })
-            })
-            stream.on('end', async () => {
-
-              const { data } = task_id ? await this.result(task_id) : { data: { outputs: '' } }
-              console.log('获取工作流执行结果', task_id, JSON.stringify(data.outputs))
-              let outputs = {}
-              if(data.outputs) {
-                  try {
-                    outputs = JSON.parse(data.outputs)
-                  } catch (error) {
-                    console.log(`获取工作流执行结果,失败:${error}`)
-                  }
-              }
-
-              resolve({ text: outputs?.text, task_id: task_id })
-            })
-          } catch (e) {
-            resolve({ text: `Dify工作流执行出错，${e}`, task_id: '' })
-          }
-        })
+      if (!text) return "";
+      return text.replace(/\\u[0-9a-f]{4}/g, (_match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      });
     }
+
+    const asyncSSE = (stream) => {
+      return new Promise((resolve, reject) => {
+        let task_id = "";
+        try {
+          stream.on("data", (data) => {
+            const streams = new TextDecoder("utf-8")
+              .decode(data, { stream: true })
+              .split("\n");
+            streams.forEach((stream) => {
+              if (stream && stream.startsWith("data: ")) {
+                let res = {};
+                try {
+                  res = JSON.parse(stream.substring(6)) || {};
+                } catch (e) {
+                  return;
+                }
+
+                if (!res.event || res.event === "error" || res.status === 400) {
+                  // ワークフロー出力エラー
+                  console.log(
+                    `ワークフロー出力エラー code:${res.code}`,
+                    res.message
+                  );
+                  return;
+                }
+                if (
+                  res.event === "workflow_started" ||
+                  res.event === "tts_message"
+                ) {
+                  task_id = res?.workflow_run_id;
+                  console.log("ワークフローの実行を開始しました");
+                }
+                if (
+                  res.event === "node_started" ||
+                  res.event === "node_finished"
+                ) {
+                  task_id = res?.workflow_run_id;
+                  console.log("ワークフローのノードを実行中です");
+                }
+                if (
+                  res.event === "workflow_finished" ||
+                  res.event === "tts_message_end"
+                ) {
+                  console.log(
+                    "ワークフローの実行が完了しました。データを組み立てて送信します"
+                  );
+                  task_id = res?.workflow_run_id;
+                }
+              }
+            });
+          });
+
+          stream.on("end", async () => {
+            const { data } = task_id
+              ? await this.result(task_id)
+              : { data: { outputs: "" } };
+            console.log(
+              "ワークフロー実行結果を取得しました",
+              task_id,
+              JSON.stringify(data.outputs)
+            );
+            let outputs = {};
+            if (data.outputs) {
+              try {
+                outputs = JSON.parse(data.outputs);
+              } catch (error) {
+                console.log(`ワークフロー実行結果の取得に失敗しました: ${error}`);
+              }
+            }
+            resolve({ text: outputs?.text, task_id: task_id });
+          });
+        } catch (e) {
+          resolve({
+            text: `Difyワークフローの実行中にエラーが発生しました: ${e}`,
+            task_id: "",
+          });
+        }
+      });
+    };
+
     if (!isStream) {
       if (res.data.code) {
-        console.log('Dify 工作流执行失败', res.data.code, res.data.message)
-        return Promise.reject(res.message)
+        // ワークフロー実行失敗
+        console.log(
+          "Dify ワークフローの実行に失敗しました",
+          res.data.code,
+          res.data.message
+        );
+        return Promise.reject(res.message);
       }
-      const response = res.data
+      const response = res.data;
       return {
-            text: response?.data?.outputs?.text || '',
-            task_id: response?.task_id,
-          }
+        text: response?.data?.outputs?.text || "",
+        task_id: response?.task_id,
+      };
     } else {
-        console.log('进入Dify工作流，请耐心等待...')
-        const result = await asyncSSE(res.data)
-        return result
+      console.log("Difyワークフローを開始しました。しばらくお待ちください...");
+      const result = await asyncSSE(res.data);
+      return result;
     }
   }
 }
